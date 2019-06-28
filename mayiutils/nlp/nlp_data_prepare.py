@@ -81,8 +81,8 @@ class NLPDataPrepareWrapper:
         if type(s) != str:
             s = str(s)
         s = s.strip()
-        s = re.sub(r'\s+', ' ', s)
-        s = s.upper()
+        # s = re.sub(r'\s+', ' ', s)
+        s = s.lower()
         s = re.sub(r'（', '(', s)
         s = re.sub(r'）', ')', s)
         s = re.sub(r'，', ',', s)
