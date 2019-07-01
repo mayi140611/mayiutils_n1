@@ -25,11 +25,14 @@
 """
 import collections
 import re
+import os
 import jieba
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import TfidfVectorizer
 import pandas as pd
 pd.set_option('display.max_columns', 100)  # 设置显示数据的最大列数，防止出现省略号…，导致数据显示不全
 pd.set_option('expand_frame_repr', False)  # 当列太多时不自动换行
-from sklearn.feature_extraction.text import TfidfVectorizer
 
 
 class NLPDataPrepareWrapper:
@@ -109,7 +112,7 @@ class NLPDataPrepareWrapper:
 
     @classmethod
     def buildTfidf(cls, texts):
-        tw = list(map(cls.tokenizer, texts))
+        tw = [' '.join(i) for i in map(cls.tokenizer, texts)]
         print('load stopwords')
         with open(os.path.join(os.path.dirname(__file__), 'data/stopwords_zh.dic'), encoding='utf8') as f:
             stopwords = [s.strip() for s in f.readlines()]
@@ -119,3 +122,38 @@ class NLPDataPrepareWrapper:
         tfidf_features = tfidf.transform(tw)
         print('building tfidf array completed')
         return tw, tfidf, tfidf_features
+
+    @classmethod
+    def align(cls, baseCol, col):
+        """
+        把一列数据匹配到基准列
+        :param baseCol: Series
+        :param col: Series
+        :return:
+        """
+        col = pd.Series(col.unique())
+        baseCol = pd.Series(baseCol.unique())
+        col1 = col.map(cls.standardize)
+        baseCol1 = baseCol.map(cls.standardize)
+        df1 = pd.DataFrame({'col': col,
+                            'sss': col1})
+        df2 = pd.DataFrame({'baseCol': baseCol,
+                            'sss': baseCol1})
+        # 处理完全匹配
+        dfr1 = pd.merge(df1, df2, how='inner', on='sss')
+        dfr1['sim'] = 2
+        # 处理非完全匹配
+        col2 = col[col1.isin(dfr1['sss'])==False]
+        tw, tfidf, tfidf_features = cls.buildTfidf(baseCol1.to_list())
+        t = tfidf.transform(col2.map(cls.standardize).map(cls.tokenizer).map(lambda s: ' '.join(s)))
+        r1 = cosine_similarity(t, tfidf_features)
+        # 最相似的
+        r2 = np.argmax(r1, axis=1)
+        dfr2 = pd.DataFrame()
+        dfr2['col'] = col2.to_list()
+        dfr2['baseCol'] = [baseCol[i] for i in r2.tolist()]
+        dfr2['sim'] = np.max(r1, axis=1)
+        df = pd.concat([dfr1, dfr2], ignore_index=True)
+        df = df[['col', 'baseCol', 'sim']].sort_values('sim', ascending=False)
+        print(f'一共匹配{len(col)}条，完全匹配：{dfr1.shape[0]}条')
+        return df
