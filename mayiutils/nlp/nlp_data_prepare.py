@@ -117,7 +117,7 @@ class NLPDataPrepareWrapper:
         with open(os.path.join(os.path.dirname(__file__), 'data/stopwords_zh.dic'), encoding='utf8') as f:
             stopwords = [s.strip() for s in f.readlines()]
         print('building tfidf array')
-        tfidf = TfidfVectorizer(stop_words=stopwords, token_pattern=r"(?u)\b\w+\b")
+        tfidf = TfidfVectorizer(stop_words=stopwords, token_pattern=r"(?u)\b[\w\.\+\-/]+\b")  # 匹配字母数字下划线和小数点  如10.0
         tfidf.fit(tw)
         tfidf_features = tfidf.transform(tw)
         print('building tfidf array completed')

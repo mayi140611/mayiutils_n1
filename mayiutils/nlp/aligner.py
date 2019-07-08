@@ -38,8 +38,7 @@ def standardize_mat(s):
 
 
 def tokenizer(s):
-    ll = npw.tokenizer(s, ['的'])
-    return ' '.join(ll), ''.join(ll)
+    return npw.tokenizer(s, ['的'])
 
 
 def diag_init():
@@ -132,3 +131,8 @@ class Aligner:
         if not sim:
             del df['sim']
         return df
+
+if __name__ == '__main__':
+    print(standardize_diag('aa '))
+    import sys
+    print(sys.path)
