@@ -6,8 +6,9 @@
 @file: data_explore.py.py
 @time: 2019-06-26 10:09
 """
+import numpy as np
 import pandas as pd
-from sklearn.preprocessing import normalize
+
 
 
 class DataExplore:
@@ -64,19 +65,29 @@ class DataExplore:
             join(dqr_percent_missing).join(dqr_mode).join(dqr_count_mode[['Count Mode']].astype(int)).join(dqr_percent_mode).join(dqr_stats)
 
     @classmethod
-    def normalize(cls, X, norm='l2', axis=0):
+    def normalize(cls, X, norm='01', axis=0, paramdict=dict()):
         """
         归一化
-        :param X:
-        :param norm:'l1', 'l2', or 'max', optional ('l2' by default)
+        :param X: ndarray
+        :param norm:'l1', 'l2', or 'max', '01', 'normal' optional ('l2' by default)
             The norm to use to normalize each non zero sample (or each non-zero
             feature if axis is 0).
-        :param axis:0 or 1, optional (1 by default)
+            '01': 处理后，最小值为0，最大值为1
+            'normal'： 处理后，均值为0，标准差为1。注意：此时axis无效，只能处理column！
+        :param axis:0 or 1, optional (0 by default)
             axis used to normalize the data along. If 1, independently normalize
             each sample, otherwise (if 0) normalize each feature.
         :return:
         """
-        return normalize(X, norm, axis)
+        if norm == '01':
+            max_val = paramdict.get('max_val', np.max(X, axis))
+            min_val = paramdict.get('min_val', np.min(X, axis))
+            return (X - min_val) / (max_val - min_val), {'max_val': max_val, 'min_val': min_val}
+        if norm == 'normal':
+            from sklearn.preprocessing import StandardScaler
+            return StandardScaler().fit_transform(X), dict()
+        from sklearn.preprocessing import normalize
+        return normalize(X, norm, axis), dict()
 
     @classmethod
     def calMissRate(cls, df, col):
