@@ -73,19 +73,26 @@ class NLPDataPrepareWrapper:
         return data, count, dictionary, reverse_dictionary
 
     @classmethod
-    def standardize(cls, s):
+    def standardize(cls, s, lower=True, whitespacereplace=False, rmParentheses=False, rmchar=False):
         """
         字符串标准化
             去除两边的空格
             中文字符替换： （），【】：“”’‘；?
         :param s:
+        :param whitespacereplace: 是否移把多个空白字符替换为单个空格
+        :param rmParentheses: 是否移除小括号及内部的内容
+        :param rmchar: 是否移除英文字符
         :return:
         """
         if type(s) != str:
             s = str(s)
         s = s.strip()
-        # s = re.sub(r'\s+', ' ', s)
-        s = s.lower()
+        if whitespacereplace:
+            s = re.sub(r'\s+', ' ', s)
+        if rmchar:
+            s = re.sub(r'[a-zA-Z]', '', s)
+        elif lower:
+            s = s.lower()
         s = re.sub(r'（', '(', s)
         s = re.sub(r'）', ')', s)
         s = re.sub(r'，', ',', s)
@@ -95,6 +102,8 @@ class NLPDataPrepareWrapper:
         s = re.sub(r'“|”|’|‘', '"', s)
         s = re.sub(r'；', ';', s)
         s = re.sub(r'？', '?', s)
+        if rmParentheses:
+            s = re.sub(r'\(.*?\)', '', s)
         return s
 
     @classmethod
@@ -158,3 +167,9 @@ class NLPDataPrepareWrapper:
         df = df[['col', 'baseCol', 'sim']].sort_values('sim', ascending=False)
         print(f'一共匹配{len(col)}条，完全匹配：{dfr1.shape[0]}条')
         return df
+
+
+if __name__ == '__main__':
+    s = 'ab打分，c（好放射费)，fdf方（好放射费)，法发顺丰'
+    r = NLPDataPrepareWrapper.standardize(s, rmParentheses=True, rmchar=True)
+    print(r)
