@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 
 
-
 class DataExplore:
     @classmethod
     def describe(cls, df):
@@ -67,6 +66,7 @@ class DataExplore:
     @classmethod
     def normalize(cls, X, norm='01', axis=0, paramdict=dict()):
         """
+        这个需要根据example改
         归一化
         :param X: ndarray
         :param norm:'l1', 'l2', or 'max', '01', 'normal' optional ('l2' by default)
