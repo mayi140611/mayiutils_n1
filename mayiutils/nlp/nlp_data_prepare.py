@@ -133,14 +133,14 @@ class NLPDataPrepareWrapper:
         return tw, tfidf, tfidf_features
 
     @classmethod
-    def align(cls, baseCol, col, isunique=False):
+    def align(cls, baseCol, col, isUnique=False):
         """
         把一列数据匹配到基准列
         :param baseCol: Series
         :param col: Series
         :return:
         """
-        if isunique:
+        if isUnique:
             col = pd.Series(col.unique())
             baseCol = pd.Series(baseCol.unique())
         col1 = col.map(cls.standardize)
