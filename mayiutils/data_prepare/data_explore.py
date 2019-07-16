@@ -27,7 +27,8 @@ class DataExplore:
         """
         # data types
         dqr_data_types = pd.DataFrame(df.dtypes, columns=['Data Type'])
-
+        # count missing
+        dqr_count_missing = pd.DataFrame(df.isnull().sum(), columns=['count Missing'])
         # percent missing
         dqr_percent_missing = pd.DataFrame(100 * (df.isnull().sum() / len(df)).round(3), columns=['% Missing'])
 
@@ -60,7 +61,7 @@ class DataExplore:
 
         print("num of records: {}, num of columns: {}".format(len(df), len(df.columns)))
 
-        return dqr_data_types.join(dqr_unique_values[['Unique Values']].astype(int)). \
+        return dqr_data_types.join(dqr_unique_values[['Unique Values']].astype(int)).join(dqr_count_missing). \
             join(dqr_percent_missing).join(dqr_mode).join(dqr_count_mode[['Count Mode']].astype(int)).join(dqr_percent_mode).join(dqr_stats)
 
     @classmethod

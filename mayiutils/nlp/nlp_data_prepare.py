@@ -120,11 +120,23 @@ class NLPDataPrepareWrapper:
         return ll
 
     @classmethod
-    def buildTfidf(cls, texts):
-        tw = [' '.join(i) for i in map(cls.tokenizer, texts)]
-        print('load stopwords')
-        with open(os.path.join(os.path.dirname(__file__), 'data/stopwords_zh.dic'), encoding='utf8') as f:
-            stopwords = [s.strip() for s in f.readlines()]
+    def buildTfidf(cls, texts, pattern='word'):
+        """
+        构建tfidf矩阵，之前需要先进行标准化，但是不需要分词
+        :param texts:
+        :param pattern:
+            char: 以字/char为单位，作为最小粒度。不分词，不去除停用词！
+            word: 分词，去除停用词
+        :return:
+        """
+        if pattern == 'char':
+            tw = [' '.join(list(re.sub(r'\s+', '', i))) for i in texts]
+            stopwords = None
+        elif pattern == 'word':
+            tw = [' '.join(i) for i in map(cls.tokenizer, texts)]
+            print('load stopwords')
+            with open(os.path.join(os.path.dirname(__file__), 'data/stopwords_zh.dic'), encoding='utf8') as f:
+                stopwords = [s.strip() for s in f.readlines()]
         print('building tfidf array')
         tfidf = TfidfVectorizer(stop_words=stopwords, token_pattern=r"(?u)\b[\w\.\+\-/]+\b")  # 匹配字母数字下划线和小数点  如10.0
         tfidf.fit(tw)
@@ -133,29 +145,32 @@ class NLPDataPrepareWrapper:
         return tw, tfidf, tfidf_features
 
     @classmethod
-    def align(cls, baseCol, col, isUnique=False):
+    def align(cls, baseCol, col, tfidfpattern='word'):
         """
         把一列数据匹配到基准列
         :param baseCol: Series
         :param col: Series
         :return:
         """
-        if isUnique:
-            col = pd.Series(col.unique())
-            baseCol = pd.Series(baseCol.unique())
         col1 = col.map(cls.standardize)
         baseCol1 = baseCol.map(cls.standardize)
         df1 = pd.DataFrame({'col': col,
                             'sss': col1})
         df2 = pd.DataFrame({'baseCol': baseCol,
                             'sss': baseCol1})
+        df1.drop_duplicates('sss', inplace=True)
+        df2.drop_duplicates('sss', inplace=True)
+
         # 处理完全匹配
         dfr1 = pd.merge(df1, df2, how='inner', on='sss')
         dfr1['sim'] = 2
         # 处理非完全匹配
-        col2 = col[col1.isin(dfr1['sss'])==False]
-        tw, tfidf, tfidf_features = cls.buildTfidf(baseCol1.to_list())
-        t = tfidf.transform(col2.map(cls.standardize).map(cls.tokenizer).map(lambda s: ' '.join(s)))
+        col2 = col[col1.isin(dfr1['sss']) == False]
+        tw, tfidf, tfidf_features = cls.buildTfidf(baseCol1.to_list(), pattern=tfidfpattern)
+        if tfidfpattern == 'word':
+            t = tfidf.transform(col2.map(cls.standardize).map(cls.tokenizer).map(lambda s: ' '.join(s)))
+        elif tfidfpattern == 'char':
+            t = tfidf.transform(col2.map(cls.standardize).map(lambda s: [i for i in s if i.strip()]).map(lambda s: ' '.join(s)))
         r1 = cosine_similarity(t, tfidf_features)
         # 最相似的
         r2 = np.argmax(r1, axis=1)
