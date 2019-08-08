@@ -21,7 +21,5 @@ def read_config_file(fp: str, mode='r', encoding='utf8', prefix='#') -> dict:
         ll = f.readlines()
         ll = [i for i in ll if all([i.strip(), i.startswith(prefix) == False])]
         params = {i.split('=')[0].strip(): i.split('=')[1].strip() for i in ll}
-        print(params)
-        return params
-    print('配置文件为空！')
-    return dict()
+    print(params)
+    return params
