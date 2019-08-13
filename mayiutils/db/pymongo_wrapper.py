@@ -27,14 +27,20 @@ class PyMongoWrapper(object):
         except Exception as e:
             print(e)
             return False
-    def findAll(self, collection, conditions=None, fieldlist='all'):
+    def findAll(self, collection, conditions=None, fieldlist='all', sort=False, limit=False):
         '''
         查找所有数据，返回指定的fieldlist
         :conditions 查询条件。
             {'c1':'全身'}
             {'c2':{'$exists':False}}：把不存在某个属性的行都查出来的条件
             {'$and/or': [ { <expression1> }, { <expression2> } , ... , { <expressionN> } ] }
+            {'trade_date': {'$lte': datetime(2001, 1, 5)}}
+            {'$and': [{'trade_date':{'$lte': datetime(2001, 1, 5)}}, {'trade_date':{'$gt': datetime(2001, 1, 2)}}]}
+
         :fieldlist 'all'表示返回所有数据，或者是一个字段list
+        :sort: list  1代表升序， -1代表降序
+            [(field1,-1), (field2,1)]
+        :limit: positive integer
         '''
         d = dict()
         if fieldlist != 'all':
@@ -42,8 +48,14 @@ class PyMongoWrapper(object):
                 d['_id'] = 0
             for i in fieldlist:
                 d[i] = 1
-            return collection.find(conditions, d)
-        return collection.find(conditions)
+            r = collection.find(conditions, d)
+        else:
+            r = collection.find(conditions)
+        if sort:
+            r = r.sort(sort)
+        if limit:
+            r = r.limit(limit)
+        return r
 
     def findOne(self, collection, conditions=None, fieldlist='all'):
         '''
