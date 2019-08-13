@@ -29,7 +29,7 @@ def df2dicts_stock(df):
     dicts = []
     for line in df.itertuples():
         ll = ['trade_date'] + list(df.columns)
-        dicts.append(dict(zip(ll, [f'{line[0].date()}']+list(line)[1:])))
+        dicts.append(dict(zip(ll, [line[0]]+list(line)[1:])))
     return dicts
 
 
