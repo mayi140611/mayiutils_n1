@@ -49,13 +49,15 @@ def daily(ts_code, start_date, end_date, mode='index'):
     while enddate.year - startdate.year > 6:
         print(startdate.strftime('%Y%m%d'),
               (startdate.replace(year=(startdate.year + 6)) - timedelta(days=1)).strftime('%Y%m%d'))
+        params = {'ts_code': ts_code,
+                  'start_date': startdate.strftime('%Y%m%d'),
+                  'end_date': (startdate.replace(year=(startdate.year + 6)) - timedelta(days=1)).strftime('%Y%m%d')}
         if mode == 'index':
-            t = pro.index_daily(ts_code=ts_code, start_date=startdate.strftime('%Y%m%d'), end_date=(
-                        startdate.replace(year=(startdate.year + 6)) - timedelta(days=1)).strftime('%Y%m%d'))
+            t = pro.index_daily(**params)
         elif mode == 'stock':
-            t = pro.daily(ts_code=ts_code, start_date=startdate.strftime('%Y%m%d'),
-                          end_date=(startdate.replace(year=(startdate.year + 6)) - timedelta(days=1)).strftime(
-                              '%Y%m%d'))
+            t = pro.daily(**params)
+        elif mode == 'fund':
+            t = pro.fund_daily(**params)
 
         if not df.empty:
             df = pd.concat([df, t], axis=0, ignore_index=True)
@@ -64,10 +66,16 @@ def daily(ts_code, start_date, end_date, mode='index'):
         startdate = startdate.replace(year=(startdate.year + 6))
     else:
         print(startdate.strftime('%Y%m%d'), end_date)
+        params = {'ts_code': ts_code,
+                  'start_date': startdate.strftime('%Y%m%d'),
+                  'end_date': end_date}
+
         if mode == 'index':
-            t = pro.index_daily(ts_code=ts_code, start_date=startdate.strftime('%Y%m%d'), end_date=end_date)
+            t = pro.index_daily(**params)
         elif mode == 'stock':
-            t = pro.daily(ts_code=ts_code, start_date=startdate.strftime('%Y%m%d'), end_date=end_date)
+            t = pro.daily(**params)
+        elif mode == 'fund':
+            t = pro.fund_daily(**params)
 
         if not df.empty:
             df = pd.concat([df, t], axis=0, ignore_index=True)
