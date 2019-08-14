@@ -22,6 +22,12 @@ def df2dicts(df):
     return dicts
 
 
+def get_tushare_pro():
+    TS_TOKEN = '5fd1639100f8a22b7f86e882e03192009faa72bae1ae93803e1172d5'
+    pro = ts.pro_api(TS_TOKEN)
+    return pro
+
+
 def df2dicts_stock(df):
     """
     df to dicts list
@@ -41,8 +47,7 @@ def daily(ts_code, start_date, end_date, mode='index'):
         index: 指数行情
         stock: 个股行情
     '''
-    TS_TOKEN = '5fd1639100f8a22b7f86e882e03192009faa72bae1ae93803e1172d5'
-    pro = ts.pro_api(TS_TOKEN)
+    pro = get_tushare_pro()
     startdate = datetime.strptime(start_date, '%Y%m%d')
     enddate = datetime.strptime(end_date, '%Y%m%d')
     df = pd.DataFrame()
