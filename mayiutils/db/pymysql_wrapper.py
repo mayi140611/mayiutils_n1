@@ -33,25 +33,40 @@ class PyMysqlWrapper:
         self._conn = pymysql.connect(user=user, passwd=passwd, db=db, host=host, use_unicode=use_unicode, charset=charset)
         self._cursor = self._conn.cursor()
 
-    def execute(self, query, args=None):
+    def getCursor(self):
+        return self._cursor
+
+    def execute(self, sql, args=None):
         """
         Execute a query 并且提交,返回查询结果条数
         :return:
         """
-        n = self._cursor.execute(query, args)
+        n = self._cursor.execute(sql, args)
         return n
 
-    def excuteMany(self, query, args):
+    def excuteMany(self, sql, args):
         """
 
         """
-        n = self._cursor.executemany(query, args)
+        n = self._cursor.executemany(sql, args)
         return n
 
-    def commit(self, query, args):
+    def commit(self):
         """
         """
         self._conn.commit()
+
+    def queryAndFetchAll(self, sql):
+        """
+        针对查询的便利方法
+        :param sql:
+        :return: 查询结果
+            (('code1', 'name1'),
+            ('code2', 'name2'),
+            ……)
+        """
+        self._cursor.execute(sql)
+        return self._cursor.fetchall()
 
     def close(self):
         self._cursor.close()
