@@ -15,17 +15,22 @@ def oracle_time_transform(s):
     :param d:
     :return:
     """
+
     def t(a):
-        return a if len(a)>1 else '0'+a
+        return a if len(a) > 1 else '0' + a
+
     try:
         ss = [i.strip() for i in s.split('-')]
         ss[1] = ss[1][:-1]
         ss = list(map(t, ss))
+        year = '20' + ss[2] if int(ss[2]) < 30 else '19' + ss[2]
     except Exception as e:
         print(str(e), s)
-        return datetime.strptime('19000101', '%Y%m%d')
-    return datetime.strptime(f'{ss[2]}{ss[1]}{ss[0]}', '%y%m%d')
+        return None
+
+    return datetime.strptime(f'{year}{ss[1]}{ss[0]}', '%Y%m%d')
 
 
 if __name__ == '__main__':
-    print(oracle_time_transform('22-9月 -13'))
+    print(oracle_time_transform('22-9月 -13'))  # 2013-09-22 00:00:00
+    print(oracle_time_transform('24-9月 -54'))  # 1954-09-24 00:00:00
