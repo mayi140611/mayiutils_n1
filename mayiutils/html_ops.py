@@ -24,7 +24,9 @@ def create_html(title):
     return d
 
 
-def create_table(thlist, content):
+def create_table(df):
+    thlist = df.columns
+    content = df.values.tolist()
     table = pq('<table border=1 width="80%" align="center"><thead></thead><tbody></tbody></table>')
     tr = '<tr>'
     for th in thlist:
@@ -48,3 +50,8 @@ def create_img(img_path):
     im = Image.open(img_path)
     img = pq(f'<img src="data:image/png;base64,{base64_data}" alt="Base64 encoded image" width="{im.size[0]}" height="{im.size[1]}"/>')
     return img
+
+
+def output2html(root, path):
+    with open(path, mode='w', encoding='utf8') as f:
+        f.write(root.outer_html())
