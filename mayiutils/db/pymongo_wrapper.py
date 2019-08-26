@@ -27,6 +27,7 @@ class PyMongoWrapper(object):
         except Exception as e:
             print(e)
             return False
+
     def findAll(self, collection, conditions=None, fieldlist='all', sort=False, limit=False):
         '''
         查找所有数据，返回指定的fieldlist
@@ -80,6 +81,7 @@ class PyMongoWrapper(object):
         :fielddict: 如{'f1':'v1','f2':'v2'}
         '''
         return collection.update_one(conditions,{ "$set": fielddict})
+
     def updateDocs(self, collection, conditions,fielddict):
         '''
         更新表中符合条件的所有记录。注意：如果field存在，则更新值，如果不存在，则新增；但是不能删除field
@@ -87,6 +89,7 @@ class PyMongoWrapper(object):
         :fielddict: 如{'f1':'v1','f2':'v2'}
         '''
         return collection.update_many(conditions,{ "$set": fielddict})
+
     def deleteDoc(self, collection, conditions):
         '''
         删除符合条件的一个文档
@@ -109,6 +112,38 @@ class PyMongoWrapper(object):
         更新表中符合条件的所有记录。注意：如果field存在，则更新值，如果不存在，则新增；但是不能删除field
         :fieldslist: 如['f1','f2'...]
         '''
-        return collection.update_many(conditions,{ "$unset": {ii:"" for ii in fieldslist}})
+        return collection.update_many(conditions, {"$unset": {ii: "" for ii in fieldslist}})
 
+    def insertDataframe(self, df, dbname, tablename, df_description='', data_usage='binary_classification', df_index=False):
+        """
+        把pandas的种DataFrame格式的数据存入MongoDB
+        直接生成新collection来存
+        :param df:
+        :param dbname:
+        :param tablename:
+        :param df_description:  数据集描述
+        :param data_usage:
+            数据集用途： binary_classification、multi_classification、regression
+        :param df_index:
+            是否存储df.index, 默认为false；如果存储，为df_index存储的col_name
+        :return:
+        """
 
+        def df2dict_list(df1, df1_index):
+            """
+            df to dicts list
+            """
+            if df1_index:
+                df1[df1_index] = df1.index
+                df1 = df1[[df1_index]+list(df1.columns)]
+            import numpy as np
+            rlist = np.apply_along_axis(lambda v: dict(zip(df1.columns, v)), axis=1, arr=df1.values).tolist()
+            return rlist
+        collection = self.getCollection(dbname, tablename)
+        collection.insert_many(df2dict_list(df, df_index))
+        c = self.getCollection(dbname, 'datasets_description')
+        d = dict()
+        d['dataset_name'] = tablename
+        d['description'] = df_description
+        d['dataset_usage'] = data_usage
+        c.insert_one(d)
