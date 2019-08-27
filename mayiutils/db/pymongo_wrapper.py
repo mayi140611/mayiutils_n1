@@ -141,9 +141,10 @@ class PyMongoWrapper(object):
             return rlist
         collection = self.getCollection(dbname, tablename)
         collection.insert_many(df2dict_list(df, df_index))
-        c = self.getCollection(dbname, 'datasets_description')
-        d = dict()
-        d['dataset_name'] = tablename
-        d['description'] = df_description
-        d['dataset_usage'] = data_usage
-        c.insert_one(d)
+        if df_description:
+            c = self.getCollection(dbname, 'datasets_description')
+            d = dict()
+            d['dataset_name'] = tablename
+            d['description'] = df_description
+            d['dataset_usage'] = data_usage
+            c.insert_one(d)
