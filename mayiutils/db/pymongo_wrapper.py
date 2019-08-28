@@ -5,7 +5,7 @@
 #待处理：
 #db.getCollection('symptomsdetail').find({}).sort({'titlepy':1})
 from pymongo import MongoClient
-
+from pymongo import ASCENDING
 
 class PyMongoWrapper(object):
     def __init__(self, ip='localhost', port=27017):
@@ -14,15 +14,40 @@ class PyMongoWrapper(object):
     def getDb(self, dbname):
         return self._client[dbname]
 
-    def getCollection(self, dbname, collection):
-        return self.getDb(dbname)[collection]
-    
-    def setUniqueIndex(self, dbname, collection, field):
-        '''
-        为单一字段设置唯一索引
-        '''
+    def listCollectionNames(self, dbname):
+        """
+        列出数据库下所有表名
+        :param dbname:
+        :return:
+        """
+        return self.getDb(dbname).list_collection_names()
+
+    def getCollection(self, dbname, tableName):
+        return self.getDb(dbname)[tableName]
+
+    def isExists(self, dbname, tableName):
+        """
+        查询表在db中是否存在
+        :param dbname:
+        :param tableName:
+        :return:
+        """
+        ll = self.listCollectionNames(dbname)
+        if tableName in ll:
+            return True
+        return False
+
+    def setUniqueIndex(self, dbname, collection, fields):
+        """
+        设置唯一索引(支持复合索引）
+        :param dbname:
+        :param collection:
+        :param fields: list
+        :return:
+        """
         try:
-            self.getDb(dbname)[collection].ensure_index(field, unique=True)
+            t = [(i, ASCENDING) for i in fields]
+            self.getDb(dbname)[collection].create_index(t, unique=True)
             return True
         except Exception as e:
             print(e)
