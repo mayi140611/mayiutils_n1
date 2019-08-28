@@ -53,21 +53,25 @@ class PyMongoWrapper(object):
             print(e)
             return False
 
-    def findAll(self, collection, conditions=None, fieldlist='all', sort=False, limit=False):
-        '''
+    def findAll(self, collection, conditions=None, fieldlist='all', sort=False, limit=False, returnFmt=None):
+        """
         查找所有数据，返回指定的fieldlist
-        :conditions 查询条件。
+        :param collection:
+        :param conditions: 查询条件。
             {'c1':'全身'}
             {'c2':{'$exists':False}}：把不存在某个属性的行都查出来的条件
             {'$and/or': [ { <expression1> }, { <expression2> } , ... , { <expressionN> } ] }
             {'trade_date': {'$lte': datetime(2001, 1, 5)}}
             {'$and': [{'trade_date':{'$lte': datetime(2001, 1, 5)}}, {'trade_date':{'$gt': datetime(2001, 1, 2)}}]}
-
-        :fieldlist 'all'表示返回所有数据，或者是一个字段list
-        :sort: list  1代表升序， -1代表降序
+        :param fieldlist: 'all'表示返回所有数据，或者是一个字段list
+        :param sort: list  1代表升序， -1代表降序
             [(field1,-1), (field2,1)]
-        :limit: positive integer
-        '''
+        :param limit: positive integer
+        :param returnFmt: 返回格式
+            None: 表示不处理，返回的是生成器
+            'df': python的DataFrame格式返回
+        :return:
+        """
         d = dict()
         if fieldlist != 'all':
             if '_id' not in fieldlist:
@@ -81,6 +85,9 @@ class PyMongoWrapper(object):
             r = r.sort(sort)
         if limit:
             r = r.limit(limit)
+        if returnFmt == 'df':
+            from pandas import DataFrame
+            return DataFrame(r)
         return r
 
     def findOne(self, collection, conditions=None, fieldlist='all'):

@@ -11,6 +11,21 @@ import pandas as pd
 import tushare as ts
 
 
+def getColnames(s):
+    """
+    常见的copy网页上的表格时，处理利用
+    s = \"""ts_code	str	TS股票代码
+    trade_date	str	交易日期
+    close	float	当日收盘价
+    turnover_rate	float	换手率（%）
+    turnover_rate_f	float	换手率（自由流通股）
+    circ_mv	float	流通市值（万元）\"""
+    :param s:
+    :return:
+        'ts_code,trade_date...,total_mv,circ_mv'
+        ['TS股票代码', ...'流通市值（万元）']
+    """
+    return ','.join([i.split()[0] for i in s.split('\n')]), [i.split()[2] for i in s.split('\n')]
 def df2dicts(df):
     """
     df to dicts list
