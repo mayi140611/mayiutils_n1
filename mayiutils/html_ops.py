@@ -24,6 +24,10 @@ def create_html(title):
     return d
 
 
+def create_label(label, content):
+    return f'<{label}>{content}</{label}>'
+
+
 def create_table(df):
     thlist = df.columns
     content = df.values.tolist()
