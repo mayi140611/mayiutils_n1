@@ -38,7 +38,8 @@ from datetime import datetime
 class Transaction:
     num = attrib(type=float, default=0)
     price = attrib(type=float, default=0)
-    tdatetime = attrib(type=datetime, default=datetime.now())
+    fee_rate = attrib(type=float, default=0)
+    t_datetime = attrib(type=datetime, default=datetime.now())
     target = attrib(type=str, default='cash')
     account = attrib(type=str, default='pingan')
 
@@ -51,7 +52,7 @@ class Transaction:
 
 @attrs
 class Trade(Publisher):
-    _transaction_list = attrib(factory=list)
+    _transaction_list = attrib(factory=list, repr=False)
     _accounts = attrib(factory=list)
     # def __init__(self, transaction_list):
     #     self._accounts = []
@@ -103,26 +104,39 @@ class Account(Subscriber):
                         amount += self._positions[t.target][1] * self._positions[t.target][0]
                     price_mean = (amount + fee)/num
                     self._positions[t.target] = (num, price_mean)
-                print(self)
+                # print(self)
 
 
 if __name__ == '__main__':
     transaction_list = []
-    transaction = Transaction(90000, target='cash', account='pingan')
-    transaction_list.append(transaction)
-    transaction = Transaction(1000, price=0.844, target='军工ETF', account='ZLT')
-    transaction_list.append(transaction)
-    transaction = Transaction(90000, target='cash', account='ZLT')
-    transaction_list.append(transaction)
-    transaction = Transaction(1000, price=0.849, target='军工ETF', account='ZLT')
-    transaction_list.append(transaction)
+    with open('transactions.txt') as f:
+        ll = f.readlines()
+    ll = [s.strip()[2:-2].split(', ') for s in ll]
+    for i in ll:
+        # print(i)
+        transaction = Transaction(float(i[1]), price=float(i[2]), target=i[0][:-1], account=i[3])
+        transaction_list.append(transaction)
+        # break
+
+    # transaction = Transaction(90000, target='cash', account='pingan')
+    # transaction_list.append(transaction)
+    # transaction = Transaction(1000, price=0.844, target='军工ETF', account='ZLT')
+    # transaction_list.append(transaction)
+    # transaction = Transaction(90000, target='cash', account='ZLT')
+    # transaction_list.append(transaction)
+    # transaction = Transaction(1000, price=0.849, target='军工ETF', account='ZLT')
+    # transaction_list.append(transaction)
 
     trade = Trade(transaction_list)
-    zlt = Account('ZLT')
-    pingan = Account('pingan')
-    trade.register(zlt)
-    trade.register(pingan)
+    ZLT = Account('ZLT')
+    PA = Account('PA')
+    TTA = Account('TTA')
+    TTJ = Account('TTJ')
+    trade.register(ZLT)
+    trade.register(PA)
+    trade.register(TTJ)
+    trade.register(TTA)
     trade.notify_all()
-
-    print(unstructure(trade))
+    print(trade)
+    # print(unstructure(trade))
 
