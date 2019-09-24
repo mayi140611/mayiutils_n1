@@ -183,6 +183,103 @@ class NLPDataPrepareWrapper:
         print(f'一共匹配{len(col)}条，完全匹配：{dfr1.shape[0]}条')
         return df
 
+    @classmethod
+    def match(cls, df_base, base_name_col, df_target, target_name_col, target_file):
+        """
+        通用匹配，按照名称进行匹配，
+        把df_target的target_name_col匹配到df_base的base_name_col
+        :param df_base:
+        :param base_name_col:
+        :param df_target:
+        :param target_name_col:
+        :param target_file:
+            输出到f"data_gen/{target_file.split('/')[-1].split('.')[0]}_匹配结果.xlsx"
+        :return:
+        """
+        def t(s):
+            return cls.standardize(s, True, True, True)
+
+        df_base['标准列'] = df_base[base_name_col].map(t)
+        df_base.drop_duplicates('标准列', inplace=True)
+        df = df_target
+        print(f'一共待匹配条数: {df.shape[0]}')
+        df['标准列'] = df[target_name_col].map(t)
+        df.drop_duplicates('标准列', inplace=True)
+        print(f'去重后，一共待匹配条数: {df.shape[0]}')
+        df_exactmatch = pd.merge(df, df_base, on='标准列')
+        df_exactmatch['sim'] = 2
+        print(f'完全匹配条数: {df_exactmatch.shape}')
+        df_base_o = df_base[df_base['标准列'].isin(df_exactmatch['标准列'].to_list()) == False]
+        df_o = df[df['标准列'].isin(df_exactmatch['标准列'].to_list()) == False]
+        if df_o.shape[0] > 0:
+            dft = cls.align(df_base_o.loc[:, '标准列'].reset_index(drop=True), df_o.loc[:, '标准列'].reset_index(drop=True),
+                            tfidfpattern='char')
+            df_o1 = pd.merge(df_o, dft, left_on='标准列', right_on='col')
+            del df_o1['col']
+            df_o1 = pd.merge(df_o1, df_base_o, left_on='baseCol', right_on='标准列')
+            df_o1.drop(columns=['标准列_x', 'baseCol', '标准列_y'], inplace=True)
+        else:
+            df_o1 = pd.DataFrame()
+        df_exactmatch.drop(columns=['标准列'], inplace=True)
+        dfr = pd.concat([df_exactmatch, df_o1], ignore_index=True).sort_values('sim', ascending=False)
+        dfr = dfr[df_exactmatch.columns]
+        dfr.to_excel(f"data_gen/{target_file.split('/')[-1].split('.')[0]}_匹配结果.xlsx", index=False)
+        return dfr
+
+    @classmethod
+    def match_hospital(cls, df_base, base_code_col, base_name_col, df_target, target_code_col, target_name_col, target_file):
+        """
+        疾病匹配，先通过code匹配，匹配上的sim=3，然后在通过名称匹配
+        :param df_base:
+        :param base_code_col:
+        :param base_name_col:
+        :param df_target:
+        :param target_code_col:
+        :param target_name_col:
+        :param target_file:
+            输出到f"data_gen/{target_file.split('/')[-1].split('.')[0]}_匹配结果.xlsx"
+        :return:
+        """
+        def t(s):
+            return cls.standardize(s, True, True)
+
+        print(df_base.head())
+        df_base['标准列'] = df_base[base_code_col].map(t)
+        df_base.drop_duplicates('标准列', inplace=True)
+        df = df_target
+        print(f'一共待匹配条数: {df.shape[0]}')
+        print(df.head())
+        df['标准列'] = df[target_code_col].map(t)
+        df.drop_duplicates('标准列', inplace=True)
+        print(f'去重后，一共待匹配条数: {df.shape[0]}')
+        # 完全匹配
+
+        df_exact = pd.merge(df, df_base, on=['标准列'])
+        df_exact['sim'] = 3
+        print(f'完全匹配条数: {df_exact.shape}')
+        # 非完全匹配
+        print('非完全匹配')
+        df_base_o = df_base[df_base['标准列'].isin(df_exact['标准列'].to_list()) == False].copy()
+        df_base_o['标准列'] = df_base_o[base_name_col].map(t)
+        df_base_o.drop_duplicates('标准列', inplace=True)
+        df_o = df[df['标准列'].isin(df_exact['标准列'].to_list()) == False].copy()
+        if df_o.shape[0] > 0:
+            df_o['标准列'] = df_o[target_name_col].map(t)
+            dft = cls.align(df_base_o.loc[:, '标准列'].reset_index(drop=True), df_o.loc[:, '标准列'].reset_index(drop=True),
+                            tfidfpattern='char')
+            df_o1 = pd.merge(df_o, dft.drop_duplicates('col'), left_on='标准列', right_on='col')
+            del df_o1['col']
+            df_o1 = pd.merge(df_o1, df_base_o, left_on='baseCol', right_on='标准列')
+            df_o1.drop(columns=['标准列_x', 'baseCol', '标准列_y'], inplace=True)
+        else:
+            df_o1 = pd.DataFrame()
+        df_exact.drop(columns=['标准列'], inplace=True)
+
+        dfr = pd.concat([df_exact, df_o1], ignore_index=True)
+        dfr = dfr[df_exact.columns]
+        dfr.to_excel(f"data_gen/{target_file.split('/')[-1].split('.')[0]}_疾病匹配结果.xlsx", index=False)
+        return dfr
+
 
 if __name__ == '__main__':
     s = 'ab打分，c（好放射费)，fdf方（好放射费)，法发顺丰'

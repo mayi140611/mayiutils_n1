@@ -132,6 +132,9 @@ class Aligner:
             del df['sim']
         return df
 
+
+
+
 if __name__ == '__main__':
     print(standardize_diag('aa '))
     import sys
