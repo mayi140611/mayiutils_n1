@@ -184,7 +184,7 @@ class NLPDataPrepareWrapper:
         return df
 
     @classmethod
-    def match(cls, df_base, base_name_col, df_target, target_name_col, target_file):
+    def match(cls, df_base, base_name_col, df_target, target_name_col, target_file, order='keep'):
         """
         通用匹配，按照名称进行匹配，
         把df_target的target_name_col匹配到df_base的base_name_col
@@ -194,6 +194,9 @@ class NLPDataPrepareWrapper:
         :param target_name_col:
         :param target_file:
             输出到f"data_gen/{target_file.split('/')[-1].split('.')[0]}_匹配结果.xlsx"
+        :param order:
+            keep: 保持原有顺序；
+            sim: 按照sim值从高到低排序
         :return:
         """
         def t(s):
@@ -202,18 +205,21 @@ class NLPDataPrepareWrapper:
         df_base['标准列'] = df_base[base_name_col].map(t)
         df_base.drop_duplicates('标准列', inplace=True)
         df = df_target
+        df['_id'] = range(df.shape[0])
         print(f'一共待匹配条数: {df.shape[0]}')
         df['标准列'] = df[target_name_col].map(t)
-        df.drop_duplicates('标准列', inplace=True)
-        print(f'去重后，一共待匹配条数: {df.shape[0]}')
+        df.drop_duplicates('标准列')
+        print(f'去重后，一共待匹配条数: {df.drop_duplicates("标准列").shape[0]}')
         df_exactmatch = pd.merge(df, df_base, on='标准列')
         df_exactmatch['sim'] = 2
         print(f'完全匹配条数: {df_exactmatch.shape}')
         df_base_o = df_base[df_base['标准列'].isin(df_exactmatch['标准列'].to_list()) == False]
         df_o = df[df['标准列'].isin(df_exactmatch['标准列'].to_list()) == False]
+        print(df_o.shape)
         if df_o.shape[0] > 0:
             dft = cls.align(df_base_o.loc[:, '标准列'].reset_index(drop=True), df_o.loc[:, '标准列'].reset_index(drop=True),
                             tfidfpattern='char')
+            print(dft.shape)
             df_o1 = pd.merge(df_o, dft, left_on='标准列', right_on='col')
             del df_o1['col']
             df_o1 = pd.merge(df_o1, df_base_o, left_on='baseCol', right_on='标准列')
@@ -221,13 +227,17 @@ class NLPDataPrepareWrapper:
         else:
             df_o1 = pd.DataFrame()
         df_exactmatch.drop(columns=['标准列'], inplace=True)
-        dfr = pd.concat([df_exactmatch, df_o1], ignore_index=True).sort_values('sim', ascending=False)
-        dfr = dfr[df_exactmatch.columns]
+        if order == 'sim':
+            dfr = pd.concat([df_exactmatch, df_o1], ignore_index=True).sort_values('sim', ascending=False)
+        else:
+            dfr = pd.concat([df_exactmatch, df_o1], ignore_index=True).sort_values('_id')
+        dfr = dfr[df_exactmatch.columns].drop_duplicates('_id')
+        del dfr['_id']
         dfr.to_excel(f"data_gen/{target_file.split('/')[-1].split('.')[0]}_匹配结果.xlsx", index=False)
         return dfr
 
     @classmethod
-    def match_hospital(cls, df_base, base_code_col, base_name_col, df_target, target_code_col, target_name_col, target_file):
+    def match_hospital(cls, df_base, base_code_col, base_name_col, df_target, target_code_col, target_name_col, target_file, order='keep'):
         """
         疾病匹配，先通过code匹配，匹配上的sim=3，然后在通过名称匹配
         :param df_base:
@@ -247,11 +257,12 @@ class NLPDataPrepareWrapper:
         df_base['标准列'] = df_base[base_code_col].map(t)
         df_base.drop_duplicates('标准列', inplace=True)
         df = df_target
+        df['_id'] = range(df.shape[0])
         print(f'一共待匹配条数: {df.shape[0]}')
         print(df.head())
         df['标准列'] = df[target_code_col].map(t)
-        df.drop_duplicates('标准列', inplace=True)
-        print(f'去重后，一共待匹配条数: {df.shape[0]}')
+
+        print(f'去重后，一共待匹配条数: {df.drop_duplicates("标准列").shape[0]}')
         # 完全匹配
 
         df_exact = pd.merge(df, df_base, on=['标准列'])
@@ -275,7 +286,10 @@ class NLPDataPrepareWrapper:
             df_o1 = pd.DataFrame()
         df_exact.drop(columns=['标准列'], inplace=True)
 
-        dfr = pd.concat([df_exact, df_o1], ignore_index=True)
+        if order == 'sim':
+            dfr = pd.concat([df_exact, df_o1], ignore_index=True).sort_values('sim', ascending=False)
+        else:
+            dfr = pd.concat([df_exact, df_o1], ignore_index=True).sort_values('_id')
         dfr = dfr[df_exact.columns]
         dfr.to_excel(f"data_gen/{target_file.split('/')[-1].split('.')[0]}_疾病匹配结果.xlsx", index=False)
         return dfr
