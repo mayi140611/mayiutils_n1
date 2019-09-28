@@ -60,6 +60,7 @@ class PyMongoWrapper(object):
         :param conditions: 查询条件。
             {'c1':'全身'}
             {'c2':{'$exists':False}}：把不存在某个属性的行都查出来的条件
+            {'ts_code': {'$in': dfr.ts_code.tolist()}}
             {'$and/or': [ { <expression1> }, { <expression2> } , ... , { <expressionN> } ] }
             {'trade_date': {'$lte': datetime(2001, 1, 5)}}
             {'$and': [{'trade_date':{'$lte': datetime(2001, 1, 5)}}, {'trade_date':{'$gt': datetime(2001, 1, 2)}}]}
