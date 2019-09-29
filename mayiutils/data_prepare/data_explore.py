@@ -11,6 +11,62 @@ import pandas as pd
 
 
 class DataExplore:
+    # @classmethod
+    # def describe(cls, df):
+    #     """
+    #     描述df的
+    #         data types
+    #         percent missing
+    #         unique values
+    #         mode 众数
+    #         count mode 众数计数
+    #         % mode 众数占所有数据的百分比
+    #         distribution stats  分布数据 分位数
+    #     :param df:
+    #     :return:
+    #     """
+    #     # data types
+    #     dqr_data_types = pd.DataFrame(df.dtypes, columns=['Data_Type'])
+    #     # count missing
+    #     dqr_count_missing = pd.DataFrame(df.isnull().sum(), columns=['缺失值数'])
+    #     # percent missing
+    #     dqr_percent_missing = pd.DataFrame(100 * (df.isnull().sum() / len(df)).round(3), columns=['%Missing'])
+    #
+    #     # unique values
+    #     dqr_unique_values = pd.DataFrame(df.nunique(), columns=['唯一值数'])
+    #
+    #     # mode 众数
+    #     dqr_mode = pd.DataFrame(df.mode().loc[0], columns=["众数"])
+    #
+    #     # count mode
+    #     dqr_count_mode = pd.DataFrame(
+    #         df.apply(lambda c: c.value_counts().iloc[0] if c.value_counts().shape[0]>0 else 0), columns=['众数个数'])
+    #     # def t(s):
+    #     #
+    #     # for c in df:
+    #     #     dqr_count_mode.loc[c] = df[c][df[c] == dqr_mode.loc[[c]].iloc[0]['Mode']].count()
+    #
+    #     # % mode
+    #     dqr_percent_mode = pd.DataFrame(100 * (dqr_count_mode['众数个数'].values / len(df)), \
+    #                                     index=dqr_count_mode.index, columns=['%Mode'])
+    #
+    #     # distribution stats
+    #     t = df.columns.tolist()
+    #
+    #     df['temp_1a2b3c__'] = 1
+    #     dqr_stats = df[['temp_1a2b3c__']+t].describe()
+    #     # dqr_stats = pd.DataFrame(df['temp_1a2b3c__'].describe())
+    #     del df['temp_1a2b3c__']
+    #     # for c in df:
+    #     #     dqr_stats = dqr_stats.join(pd.DataFrame(df[c].describe()))
+    #     del dqr_stats['temp_1a2b3c__']
+    #     dqr_stats = dqr_stats.transpose().drop('count', axis=1)
+    #
+    #     print("num of records: {}, num of columns: {}".format(len(df), len(df.columns)))
+    #
+    #     return dqr_data_types.join(dqr_unique_values[['唯一值数']].astype(int)).join(dqr_count_missing). \
+    #         join(dqr_percent_missing).join(dqr_mode).join(dqr_count_mode[['众数个数']].astype(int)).join(dqr_percent_mode).join(dqr_stats)
+
     @classmethod
     def describe(cls, df):
         """
@@ -25,6 +81,8 @@ class DataExplore:
         :param df:
         :return:
         """
+        import pandas as pd
+
         # data types
         dqr_data_types = pd.DataFrame(df.dtypes, columns=['Data Type'])
         # count missing
@@ -62,7 +120,8 @@ class DataExplore:
         print("num of records: {}, num of columns: {}".format(len(df), len(df.columns)))
 
         return dqr_data_types.join(dqr_unique_values[['Unique Values']].astype(int)).join(dqr_count_missing). \
-            join(dqr_percent_missing).join(dqr_mode).join(dqr_count_mode[['Count Mode']].astype(int)).join(dqr_percent_mode).join(dqr_stats)
+            join(dqr_percent_missing).join(dqr_mode).join(dqr_count_mode[['Count Mode']].astype(int)).join(
+            dqr_percent_mode).join(dqr_stats)
 
     @classmethod
     def normalize(cls, X, norm='01', axis=0, paramdict=dict()):
