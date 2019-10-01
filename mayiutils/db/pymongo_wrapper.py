@@ -7,6 +7,7 @@
 from pymongo import MongoClient
 from pymongo import ASCENDING
 
+
 class PyMongoWrapper(object):
     def __init__(self, ip='localhost', port=27017):
         self._client = MongoClient(ip, port)#MongoClient('localhost', 27017) or MongoClient('mongodb://localhost:27017/')
@@ -181,3 +182,6 @@ class PyMongoWrapper(object):
             d['description'] = df_description
             d['dataset_usage'] = data_usage
             c.insert_one(d)
+
+    def close(self):
+        self._client.close()

@@ -37,10 +37,7 @@ def df2dicts(df):
     return dicts
 
 
-def get_tushare_pro():
-    TS_TOKEN = '5fd1639100f8a22b7f86e882e03192009faa72bae1ae93803e1172d5'
-    pro = ts.pro_api(TS_TOKEN)
-    return pro
+
 
 
 def df2dicts_stock(df):
@@ -54,54 +51,70 @@ def df2dicts_stock(df):
     return dicts
 
 
-def daily(ts_code, start_date, end_date, mode='index'):
-    '''
-    获取每日行情数据
-    由于ts的接口一次只能获取1800个交易日（一年大概有250个交易日。约7年）的数据
-    :mode
-        index: 指数行情
-        stock: 个股行情
-    '''
-    pro = get_tushare_pro()
-    startdate = datetime.strptime(start_date, '%Y%m%d')
-    enddate = datetime.strptime(end_date, '%Y%m%d')
-    df = pd.DataFrame()
-    while enddate.year - startdate.year > 6:
-        print(startdate.strftime('%Y%m%d'),
-              (startdate.replace(year=(startdate.year + 6)) - timedelta(days=1)).strftime('%Y%m%d'))
-        params = {'ts_code': ts_code,
-                  'start_date': startdate.strftime('%Y%m%d'),
-                  'end_date': (startdate.replace(year=(startdate.year + 6)) - timedelta(days=1)).strftime('%Y%m%d')}
-        if mode == 'index':
-            t = pro.index_daily(**params)
-        elif mode == 'stock':
-            t = pro.daily(**params)
-        elif mode == 'fund':
-            t = pro.fund_daily(**params)
+class TushareWrapper:
+    def __init__(self):
+        TS_TOKEN = '5fd1639100f8a22b7f86e882e03192009faa72bae1ae93803e1172d5'
+        self._pro = ts.pro_api(TS_TOKEN)
 
-        if not df.empty:
-            df = pd.concat([df, t], axis=0, ignore_index=True)
+    def get_tushare_pro(self):
+        return self._pro
+
+    def get_stock_list(self):
+        """
+        查询当前所有正常上市交易的股票列表
+        :return:
+        """
+        data = self._pro.stock_basic(exchange='', list_status='L', fields='ts_code,symbol,name,area,industry,list_date')
+        return data
+
+    def daily(self, ts_code, start_date, end_date, mode='index'):
+        '''
+        获取每日行情数据
+        由于ts的接口一次只能获取1800个交易日（一年大概有250个交易日。约7年）的数据
+        :mode
+            index: 指数行情
+            stock: 个股行情
+        '''
+        pro = self._pro
+        startdate = datetime.strptime(start_date, '%Y%m%d')
+        enddate = datetime.strptime(end_date, '%Y%m%d')
+        df = pd.DataFrame()
+        while enddate.year - startdate.year > 6:
+            print(startdate.strftime('%Y%m%d'),
+                  (startdate.replace(year=(startdate.year + 6)) - timedelta(days=1)).strftime('%Y%m%d'))
+            params = {'ts_code': ts_code,
+                      'start_date': startdate.strftime('%Y%m%d'),
+                      'end_date': (startdate.replace(year=(startdate.year + 6)) - timedelta(days=1)).strftime('%Y%m%d')}
+            if mode == 'index':
+                t = pro.index_daily(**params)
+            elif mode == 'stock':
+                t = pro.daily(**params)
+            elif mode == 'fund':
+                t = pro.fund_daily(**params)
+
+            if not df.empty:
+                df = pd.concat([df, t], axis=0, ignore_index=True)
+            else:
+                df = t
+            startdate = startdate.replace(year=(startdate.year + 6))
         else:
-            df = t
-        startdate = startdate.replace(year=(startdate.year + 6))
-    else:
-        print(startdate.strftime('%Y%m%d'), end_date)
-        params = {'ts_code': ts_code,
-                  'start_date': startdate.strftime('%Y%m%d'),
-                  'end_date': end_date}
+            print(startdate.strftime('%Y%m%d'), end_date)
+            params = {'ts_code': ts_code,
+                      'start_date': startdate.strftime('%Y%m%d'),
+                      'end_date': end_date}
 
-        if mode == 'index':
-            t = pro.index_daily(**params)
-        elif mode == 'stock':
-            t = pro.daily(**params)
-        elif mode == 'fund':
-            t = pro.fund_daily(**params)
+            if mode == 'index':
+                t = pro.index_daily(**params)
+            elif mode == 'stock':
+                t = pro.daily(**params)
+            elif mode == 'fund':
+                t = pro.fund_daily(**params)
 
-        if not df.empty:
-            df = pd.concat([df, t], axis=0, ignore_index=True)
-        else:
-            df = t
-    df = df.sort_values('trade_date')
-    df['trade_date'] = pd.to_datetime(df['trade_date'])
-    df.set_index('trade_date', inplace=True)
-    return df
+            if not df.empty:
+                df = pd.concat([df, t], axis=0, ignore_index=True)
+            else:
+                df = t
+        df = df.sort_values('trade_date')
+        df['trade_date'] = pd.to_datetime(df['trade_date'])
+        df.set_index('trade_date', inplace=True)
+        return df
