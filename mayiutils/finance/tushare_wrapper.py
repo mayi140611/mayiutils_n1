@@ -59,7 +59,7 @@ class TushareWrapper:
     def get_tushare_pro(self):
         return self._pro
 
-    def get_stock_list(self):
+    def get_stocks_info(self):
         """
         查询当前所有正常上市交易的股票列表
         :return:
@@ -117,4 +117,32 @@ class TushareWrapper:
         df = df.sort_values('trade_date')
         df['trade_date'] = pd.to_datetime(df['trade_date'])
         df.set_index('trade_date', inplace=True)
+        return df
+
+    def get_daily_basic(self, t_date):
+        f = 'ts_code,trade_date,close,turnover_rate,turnover_rate_f,volume_ratio,pe,pe_ttm,pb,ps,ps_ttm,total_share,float_share,free_share,total_mv,circ_mv'
+        df = self._pro.daily_basic(ts_code='', trade_date=t_date, fields=f)
+        df.columns = [
+            'ts_code',
+            'trade_date',
+            'close',
+            '换手率（%）',
+            '换手率（自由流通股）',
+            '量比',
+            '市盈率（总市值/净利润）',
+            '市盈率（TTM）',
+            '市净率（总市值/净资产）',
+            '市销率',
+            '市销率（TTM）',
+            '总股本',
+            '流通股本',
+            '自由流通股本',
+            '总市值',
+            '流通市值（万元）'
+        ]
+        if not df.empty:
+            print(f'请求到{len(df)}条数据！')
+            df.trade_date = pd.to_datetime(df.trade_date)
+            df = df.sort_values('总市值', ascending=False)
+            df['rank'] = range(1, df.shape[0] + 1)
         return df
