@@ -139,7 +139,7 @@ class PyMongoWrapper(object):
         更新表中符合条件的一条记录。注意：如果field存在，则更新值，如果不存在，则新增；但是不能删除field
         :fieldslist: 如['f1','f2'...]
         '''
-        return collection.update_one(conditions,{ "$unset": {ii:"" for ii in fieldslist}})
+        return collection.update_one(conditions, {"$unset": {ii: "" for ii in fieldslist}})
 
     def removeDocsFields(self, collection, conditions,fieldslist):
         '''
@@ -158,7 +158,7 @@ class PyMongoWrapper(object):
         :param df_description:  数据集描述
         :param data_usage:
             数据集用途： binary_classification、multi_classification、regression
-        :param df_index:
+        :param df_index:xr
             是否存储df.index, 默认为false；如果存储，为df_index存储的col_name
         :return:
         """
@@ -185,3 +185,4 @@ class PyMongoWrapper(object):
 
     def close(self):
         self._client.close()
+
