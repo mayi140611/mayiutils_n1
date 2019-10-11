@@ -67,9 +67,17 @@ class TushareWrapper:
         data = self._pro.stock_basic(exchange='', list_status='L', fields='ts_code,symbol,name,area,industry,list_date')
         return data
 
-    def daily(self, ts_code, start_date, end_date, mode='index'):
+    def daily(self, trade_date):
+        """
+        获取某一日全部股票的数据
+        :param trade_date:
+        :return:
+        """
+        return self._pro.daily(trade_date=trade_date)
+
+    def history(self, ts_code, start_date, end_date, mode='index'):
         '''
-        获取每日行情数据
+        获取某只股票的历史行情数据
         由于ts的接口一次只能获取1800个交易日（一年大概有250个交易日。约7年）的数据
         :mode
             index: 指数行情
