@@ -56,17 +56,23 @@ class PyMysqlWrapper:
         """
         self._conn.commit()
 
-    def queryAndFetchAll(self, sql):
+    def queryAndFetchAll(self, sql, return_df=True, cols=None):
         """
         针对查询的便利方法
         :param sql:
+        :param return_df:  是否返回df格式
+        :param cols:  如果以df格式返回时的col_name
         :return: 查询结果
             (('code1', 'name1'),
             ('code2', 'name2'),
             ……)
         """
         self._cursor.execute(sql)
-        return self._cursor.fetchall()
+        r = self._cursor.fetchall()
+        if return_df:
+            import pandas as pd
+            return pd.DataFrame(list(r), columns=cols)
+        return r
 
     def close(self):
         self._cursor.close()
