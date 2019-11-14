@@ -11,6 +11,21 @@ import pandas as pd
 
 
 class DataExplore:
+    @classmethod
+    def time_cost(cls, func):
+        """
+        记录函数运行时间
+        """
+        import time
+
+        def wrapper(*args, **kvargs):
+            tic = time.time()
+            result = func(*args, **kvargs)
+            toc = time.time()
+            print('{} is called. {}s is used.'.format(func.__name__, toc - tic))
+            return result
+
+        return wrapper
     # @classmethod
     # def describe(cls, df):
     #     """
@@ -82,6 +97,9 @@ class DataExplore:
         :return:
         """
         import pandas as pd
+        pd.set_option('display.max_rows', 200)
+        pd.set_option('display.max_columns', 100)  # 设置显示数据的最大列数，防止出现省略号…，导致数据显示不全
+        pd.set_option('expand_frame_repr', False)  # 当列太多时不自动换行
 
         # data types
         dqr_data_types = pd.DataFrame(df.dtypes, columns=['Data Type'])
