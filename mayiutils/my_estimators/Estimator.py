@@ -177,7 +177,8 @@ if __name__ == '__main__':
         'custom_metric': 'F1',
         'loss_function': 'CrossEntropy'
     }
-    c = CatBoostEstimator(params=params)
+    c = CatBoostClassifierEstimator(params=params)
+    print(c._params)
     print(c._model)
 
 
