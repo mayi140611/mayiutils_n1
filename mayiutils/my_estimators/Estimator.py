@@ -94,7 +94,7 @@ class CatBoostClassifierEstimator(Estimator):
         train_data = Pool(data=features,
                           label=labels,
                           cat_features=cat_cols)
-        self._model.fit(train_data, plot, verbose)
+        self._model.fit(train_data, plot=plot, verbose=verbose)
         if show_features_importance:
             df_features_importance = pd.DataFrame({'name': self._model.feature_names_,
                                                    'value': self._model.feature_importances_})
@@ -117,13 +117,14 @@ class CatBoostClassifierEstimator(Estimator):
         df_val, y_val, cat_cols = input_fn()
         test_data = Pool(data=df_val,
                          cat_features=cat_cols)
-        print(pd.Series(self._model.predict(test_data)).value_counts())
-        print(classification_report(y_val, self._model.predict(test_data)))
+        r = self._model.predict(test_data)
+        print(pd.Series(r).value_counts())
+        print(classification_report(y_val, r))
         dfr = pd.DataFrame(y_val)
         dfr.columns = ['true_label']
         y_test_hat = self._model.predict_proba(test_data)[:, 1]
         dfr['score'] = y_test_hat
-        dfr['predict_label'] = self._model.predict(test_data)
+        dfr['predict_label'] = r
         dfr = dfr.sort_values('score', ascending=False)
         dfr['order'] = range(1, dfr.shape[0] + 1)
         print(dfr[dfr.true_label == 1])
