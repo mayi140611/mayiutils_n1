@@ -170,6 +170,69 @@ class CatBoostClassifierEstimator(Estimator):
         return rr
 
 
+class XGBoostRegressorEstimator(Estimator):
+    def __init__(self, params):
+        """
+
+        :param params:
+            params = {
+                'max_depth': 3,
+                learning_rate: 0.1,
+                'n_estimators': 100,
+                'objective': 'reg:linear',
+                'booster': 'gbtree'
+            }
+        """
+        super().__init__(params=params)
+        self._model = self.model_fn()
+
+    def model_fn(self):
+        from xgboost import XGBRegressor
+        return XGBRegressor(**self._params)
+
+    def train(self, input_fn, plot=True, verbose=True, show_features_importance=False):
+        import pandas as pd
+        features, ys, feature_names = input_fn()
+        self._model.fit(features, ys)
+        if show_features_importance:
+            df_features_importance = pd.DataFrame({'name': feature_names,
+                                                   'value': self._model.feature_importances_})
+            df_features_importance = df_features_importance.sort_values('value', ascending=False)
+
+            df_features_importance.reset_index(drop=True, inplace=True)
+            print(df_features_importance.head(5))
+            import matplotlib.pyplot as plt
+            fea_ = df_features_importance.sort_values('value')[df_features_importance.value > 0].value
+            fea_name = df_features_importance.sort_values('value')[df_features_importance.value > 0].name
+            plt.figure(figsize=(10, 20))
+            plt.barh(fea_name, fea_, height=0.5)
+            plt.show()
+            return df_features_importance
+
+    def evaluate(self, input_fn):
+        from sklearn.metrics import mean_squared_error as mse, mean_absolute_error as mae
+        import pandas as pd
+        import numpy as np
+        features, ys = input_fn()  # test_data: np.array
+        r = self._model.predict(features)
+        dfr = pd.DataFrame(ys)
+        dfr.columns = ['y_true']
+        dfr['y_predict'] = r
+        print(f'mae: {mae(ys, r)}')
+        print(f'mse: {mse(ys, r)}')
+        print(f'rmse: {np.sqrt(mse(ys, r))}')
+        return dfr
+
+    def predict(self, input_fn):
+        import pandas as pd
+        df_predict, id_col_name = input_fn()  # id_col_name: 预测的标识列名称
+        dfr = pd.DataFrame(df_predict[id_col_name])
+        r = self._model.predict(df_predict.values)
+
+        dfr['y_predict'] = r
+        return dfr
+
+
 if __name__ == '__main__':
     params = {
         'iterations': 10,

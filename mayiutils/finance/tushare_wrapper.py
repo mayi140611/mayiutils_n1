@@ -36,10 +36,6 @@ def df2dicts(df):
         dicts.append(dict(zip(ll, list(line)[1:])))
     return dicts
 
-
-
-
-
 def df2dicts_stock(df):
     """
     df to dicts list
@@ -76,13 +72,17 @@ class TushareWrapper:
         return self._pro.daily(trade_date=trade_date)
 
     def history(self, ts_code, start_date, end_date, mode='index'):
-        '''
+        """
         获取某只股票的历史行情数据
         由于ts的接口一次只能获取1800个交易日（一年大概有250个交易日。约7年）的数据
-        :mode
+        :param ts_code:
+        :param start_date: str
+        :param end_date: str
+        :param mode:
             index: 指数行情
             stock: 个股行情
-        '''
+        :return:
+        """
         pro = self._pro
         startdate = datetime.strptime(start_date, '%Y%m%d')
         enddate = datetime.strptime(end_date, '%Y%m%d')
