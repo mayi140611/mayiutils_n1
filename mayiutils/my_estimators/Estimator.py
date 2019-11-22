@@ -8,35 +8,108 @@
 """
 
 
+class DataProcessor:
+    def load_data(self, cat_cols, num_cols=None, date_cols=None, mode='train'):
+        """
+        载入数据，
+        准备label，
+        及train_set, val_set, pridect_set的通用操作
+        划分train_set，val_set
+        :param mode: 'train' | 'predict'
+        :return:
+        """
+        (train_x, train_y), (val_x, val_y), test_x = None
+        if mode == "train":
+            return (train_x, train_y), (val_x, val_y)
+        elif mode == "predict":
+            return test_x
+
+    def train_input_fn(self):
+        """
+        A function that provides input data for training as minibatches.
+        :return:
+        """
+        pass
+
+    def val_input_fn(self, features, labels, batch_size=None):
+        pass
+
+    def test_input_fn(self, features, batch_size=None):
+        pass
+
+
+class DataProcessor4CBCEstimator(DataProcessor):
+    """
+    DataProcessor for CatBoostClassifierEstimator
+    """
+    def load_data(self, df, cat_cols, num_cols=None, date_cols=None, mode='train', split=0.25, random_state=14):
+        for i in date_cols:
+            try:
+                df.loc[:, f'{i}_day'] = df[i].dt.day
+                df.loc[:, f'{i}_month'] = df[i].dt.month
+                df.loc[:, f'{i}_weekday'] = df[i].dt.weekday
+            except Exception as e:
+                print(i, e)
+                df.loc[:, f'{i}_day'] = 0
+                df.loc[:, f'{i}_month'] = 0
+                df.loc[:, f'{i}_weekday'] = 0
+            cat_cols.extend([f'{i}_day', f'{i}_month', f'{i}_weekday'])
+        import itertools
+        for s, e in itertools.combinations(date_cols, 2):
+            try:
+                df.loc[:, f'{e}-{s}'] = (df[e] - df[s]).dt.days
+            except Exception as ee:
+                print(s, e, ee)
+                df.loc[:, f'{e}-{s}'] = 0
+            num_cols.append(f'{e}-{s}')
+        df = df[cat_cols + num_cols]
+        cat_cols.remove('label')
+        df.loc[:, cat_cols] = df[cat_cols].fillna('<UNK>')
+        df.loc[:, cat_cols] = df[cat_cols].applymap(str)
+        if mode == 'train':
+            from sklearn.model_selection import train_test_split
+            df_train, df_val, y_train, y_val = train_test_split(df.drop(columns=['label']), df['label'],
+                                                                test_size=split, random_state=random_state,
+                                                                stratify=df['label'])
+            return (df_train, df_val), (y_train, y_val), cat_cols
+
+    def train_input_fn(self, features, labels, cat_cols, batch_size=None):
+        return features, labels, cat_cols
+
+    def val_input_fn(self, features, labels, cat_cols, batch_size=None):
+        return features, labels, cat_cols
+
+
 class Estimator(object):
     """Base Estimator class.
     参考 https://github.com/tensorflow/estimator/blob/master/tensorflow_estimator/python/estimator/estimator.py
     """
-    def __init__(self, params=None):
-        """Constructs an `Estimator` instance.
+    def __init__(self, params: dict=None, data_processor: DataProcessor=None):
+        """
+        Constructs an `Estimator` instance.
+        :param params:
+        :param data_processor:
         """
         self._params = params
+        self._data_processor = data_processor
 
     def model_fn(self):
         return ""
 
     def train(self,
-              input_fn,
               steps=None):
         """
         Trains a model given training data `input_fn`.
-        :param input_fn: A function that provides input data for training as minibatches.
+        :param input_fn:
         :param steps: Number of steps for which to train the model.
         :return:
         """
         pass
 
-    def evaluate(self, input_fn,
-                 steps=None):
+    def evaluate(self, steps=None):
         """
         Evaluates the model given evaluation data `input_fn`.
     For each step, calls `input_fn`, which returns one batch of data.
-        :param input_fn:
         :param steps:
         :param hooks:
         :param checkpoint_path:
@@ -46,14 +119,12 @@ class Estimator(object):
         pass
 
     def predict(self,
-                input_fn,
                 predict_keys=None,
                 hooks=None,
                 checkpoint_path=None,
                 yield_single_examples=True):
         """
         Yields predictions for given features.
-        :param input_fn:
         :param predict_keys:
         :param hooks:
         :param checkpoint_path:
@@ -68,7 +139,7 @@ class Estimator(object):
 
 
 class CatBoostClassifierEstimator(Estimator):
-    def __init__(self, params):
+    def __init__(self, params, data_processor):
         """
 
         :param params:
@@ -80,17 +151,17 @@ class CatBoostClassifierEstimator(Estimator):
                 'loss_function': 'CrossEntropy'
             }
         """
-        super().__init__(params=params)
+        super().__init__(params=params, data_processor=data_processor)
         self._model = self.model_fn()
 
     def model_fn(self):
         from catboost import CatBoostClassifier
         return CatBoostClassifier(**self._params)
 
-    def train(self, input_fn, plot=True, verbose=True, show_features_importance=False):
+    def train(self, plot=True, verbose=True, show_features_importance=False):
         from catboost import Pool
         import pandas as pd
-        features, labels, cat_cols = input_fn()
+        features, labels, cat_cols = self._data_processor.train_input_fn()
         train_data = Pool(data=features,
                           label=labels,
                           cat_features=cat_cols)
@@ -110,11 +181,11 @@ class CatBoostClassifierEstimator(Estimator):
             plt.show()
             return df_features_importance
 
-    def evaluate(self, input_fn):
+    def evaluate(self):
         from sklearn.metrics import classification_report
         from catboost import Pool
         import pandas as pd
-        df_val, y_val, cat_cols = input_fn()
+        df_val, y_val, cat_cols = self._data_processor.val_input_fn()
         test_data = Pool(data=df_val,
                          cat_features=cat_cols)
         r = self._model.predict(test_data)
@@ -130,10 +201,10 @@ class CatBoostClassifierEstimator(Estimator):
         print(dfr[dfr.true_label == 1])
         return dfr
 
-    def predict(self, input_fn, explain=True):
+    def predict(self, explain=True):
         from catboost import Pool
         import pandas as pd
-        df_predict, cat_cols, id_col_name = input_fn()  # id_col_name: 预测的标识列名称
+        df_predict, cat_cols, id_col_name = self._data_processor.test_input_fn()  # id_col_name: 预测的标识列名称
         test_data = Pool(data=df_predict,
                          cat_features=cat_cols)
         dfr = pd.DataFrame(df_predict[id_col_name])
@@ -171,7 +242,7 @@ class CatBoostClassifierEstimator(Estimator):
 
 
 class XGBoostRegressorEstimator(Estimator):
-    def __init__(self, params):
+    def __init__(self, params, data_processor):
         """
 
         :param params:
