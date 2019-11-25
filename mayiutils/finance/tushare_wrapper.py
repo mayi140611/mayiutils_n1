@@ -71,16 +71,15 @@ class TushareWrapper:
         """
         return self._pro.daily(trade_date=trade_date)
 
-    def history(self, ts_code, start_date, end_date, mode='index'):
+    def history(self, ts_code, start_date, end_date, asset='E', adj='qfq'):
         """
         获取某只股票的历史行情数据
         由于ts的接口一次只能获取1800个交易日（一年大概有250个交易日。约7年）的数据
         :param ts_code:
         :param start_date: str
         :param end_date: str
-        :param mode:
-            index: 指数行情
-            stock: 个股行情
+        :param asset: 资产类别：E股票 I沪深指数 C数字货币 FT期货 FD基金 O期权 CB可转债（v1.2.39），默认E
+        :param adj: 复权类型(只针对股票)：None未复权 qfq前复权 hfq后复权 , 默认None
         :return:
         """
         pro = self._pro
@@ -92,14 +91,18 @@ class TushareWrapper:
                   (startdate.replace(year=(startdate.year + 6)) - timedelta(days=1)).strftime('%Y%m%d'))
             params = {'ts_code': ts_code,
                       'start_date': startdate.strftime('%Y%m%d'),
-                      'end_date': (startdate.replace(year=(startdate.year + 6)) - timedelta(days=1)).strftime('%Y%m%d')}
-            if mode == 'index':
-                t = pro.index_daily(**params)
-            elif mode == 'stock':
-                t = pro.daily(**params)
-            elif mode == 'fund':
-                t = pro.fund_daily(**params)
-
+                      'asset': asset,
+                      'api': self._pro,
+                      'end_date': (startdate.replace(year=(startdate.year + 6)) - timedelta(days=1)).strftime('%Y%m%d'),
+                      'adj': adj}
+            # if mode == 'index':
+            #     t = pro.index_daily(**params)
+            # elif mode == 'stock':
+            #     t = pro.daily(**params)
+            #
+            # elif mode == 'fund':
+            #     t = pro.fund_daily(**params)
+            t = ts.pro_bar(**params)
             if not df.empty:
                 df = pd.concat([df, t], axis=0, ignore_index=True)
             else:
@@ -107,17 +110,20 @@ class TushareWrapper:
             startdate = startdate.replace(year=(startdate.year + 6))
         else:
             print(startdate.strftime('%Y%m%d'), end_date)
+
             params = {'ts_code': ts_code,
                       'start_date': startdate.strftime('%Y%m%d'),
-                      'end_date': end_date}
-
-            if mode == 'index':
-                t = pro.index_daily(**params)
-            elif mode == 'stock':
-                t = pro.daily(**params)
-            elif mode == 'fund':
-                t = pro.fund_daily(**params)
-
+                      'asset': asset,
+                      'api': self._pro,
+                      'end_date': end_date,
+                      'adj': adj}
+            # if mode == 'index':
+            #     t = pro.index_daily(**params)
+            # elif mode == 'stock':
+            #     t = pro.daily(**params)
+            # elif mode == 'fund':
+            #     t = pro.fund_daily(**params)
+            t = ts.pro_bar(**params)
             if not df.empty:
                 df = pd.concat([df, t], axis=0, ignore_index=True)
             else:
