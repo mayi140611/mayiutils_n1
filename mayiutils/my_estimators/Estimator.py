@@ -89,6 +89,13 @@ class Estimator(object):
         """
         pass
 
+    def save_model(self):
+        pass
+
+    def load_model(self):
+        pass
+
+
 class ClsEstimator(Estimator):
     """Classifier Estimator class.
     """
@@ -212,11 +219,12 @@ class CatBoostClsEstimator(ClsEstimator):
             plt.show()
             return df_features_importance
 
-    def evaluate(self):
+    def evaluate(self, df_val=None, y_val=None, cat_cols=None):
         from sklearn.metrics import classification_report
         from catboost import Pool
         import pandas as pd
-        df_val, y_val, cat_cols = self._data_processor.eval_input_fn()
+        if not df_val:
+            df_val, y_val, cat_cols = self._data_processor.eval_input_fn()
         test_data = Pool(data=df_val,
                          cat_features=cat_cols)
         r = self._model.predict(test_data)
@@ -347,6 +355,17 @@ class CatBoostClsEstimator(ClsEstimator):
             count += 1
         print(rr)
         return rr
+
+    def save_model(self, model_path):
+        """
+
+        :param model_path: 'catboost_model.dump'
+        :return:
+        """
+        self._model.save_model(model_path)
+
+    def load_model(self, model_path):
+        self._model = self.model_fn().load_model(model_path)
 
 
 class XGBoostRegressorEstimator(Estimator):
