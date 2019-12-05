@@ -326,7 +326,7 @@ class CatBoostClsEstimator(ClsEstimator):
         dfr = pd.DataFrame(df_test[id_col_name])
         y_test_hat = self._model.predict_proba(test_data)[:, 1]
         dfr['score'] = y_test_hat
-        dfr['test_label'] = self._model.test(test_data)
+        dfr['test_label'] = self._model.predict(test_data)
         s = dfr['test_label'].value_counts()
         print(s)
         print(f'su sample num：{s.loc[1] if 1 in s else 0}')
