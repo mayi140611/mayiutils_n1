@@ -154,19 +154,7 @@ class DataExplore:
         print(f'特征 {col} 非缺失时, label {labels[0]} 占总样本数比 = {round(r2, 2)}')
         return r1, r2
 
-    @classmethod
-    def build_one_hot_features(cls, df, cols):
-        """
-        构建one-hot特征
-        :param df:
-        :param cols: list
-        :return:
-        """
-        for col in cols:
-            t = pd.get_dummies(df[col], prefix=col)
-            df = pd.concat([df, t], axis=1)
-            del df[col]
-        return df
+
 
     @classmethod
     def hosRank(cls, hosRankSeries):
