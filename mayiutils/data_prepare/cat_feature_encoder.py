@@ -55,15 +55,3 @@ class CatFeatureEncoder:
         le = LabelEncoder()
         le.fit(s)
         return le.transform(s), le
-
-
-
-
-
-
-
-
-
-
-
-
