@@ -53,13 +53,16 @@ class FastTextDataProcessor(DataProcessor):
             str) + '\n'
         with open(dest_train_file_path, 'w', encoding='utf8') as f:
             f.writelines(train_set.tolist())
+        return train_set
 
     def eval_input_fn(self, dest_val_file_path='data_gen/valset.txt'):
         val_set = self._features_val.map(lambda x: ' '.join(list(x))) + ' __label__' + self._labels_val.map(
             str) + '\n'
         with open(dest_val_file_path, 'w', encoding='utf8') as f:
             f.writelines(val_set.tolist())
+        return val_set
 
+    @classmethod
     def test_input_fn(self, features):
         """
 
@@ -67,7 +70,6 @@ class FastTextDataProcessor(DataProcessor):
         :return:
         """
         return features.map(lambda x: ' '.join(list(x)))
-
 
 
 class Estimator(object):
@@ -694,6 +696,7 @@ class FastTextClsEstimator(ClsEstimator):
         """
         super().__init__(params=params, data_processor=data_processor, model_path=model_path)
         if self._model_path:
+            print(f'load model from {self._model_path}')
             self.load_model(self._model_path)
         else:
             self._model = None
@@ -708,7 +711,11 @@ class FastTextClsEstimator(ClsEstimator):
         :param train_file_path:
         :return:
         """
-        self._model = self.model_fn.train_supervised(train_file_path)
+        self._model = self.model_fn().train_supervised(train_file_path)
+        print(f'model.lr： {self._model.lr}')
+        print(f'model.epoch： {self._model.epoch}')
+        print(f'model.labels： {self._model.labels}')
+        print(f'model.words： {self._model.words[:10]}...')
         return self._model
 
     def _print_results(self, N, p, r):
@@ -716,10 +723,9 @@ class FastTextClsEstimator(ClsEstimator):
         print("P@{}\t{:.3f}".format(1, p))
         print("R@{}\t{:.3f}".format(1, r))
 
-    def evaluate(self, path, val_file_path, mode='simple', k=1):
+    def evaluate(self, val_file_path, mode='simple', k=1):
         """
         To evaluate our model by computing the precision at 1 (P@1) and the recall on a test set, we use the test function
-        :param path:
         :param val_file_path:
         :param mode:
             simple: 返回整体的精确率和召回率
@@ -738,20 +744,23 @@ class FastTextClsEstimator(ClsEstimator):
             return r_dict
         return N, p, r
 
-    def test(self, test_data: list, k=1):
+    def test(self, test_data, k=1):
         """
         Given a string, get a list of labels and a list of
         corresponding probabilities. k controls the number
         of returned labels. A choice of 5, will return the 5
         most probable labels. By default this returns only
         the most likely label and probability.
-        :param test_data:
+        :param test_data: Series
         :param k:
         :return:
         """
-        return self._model.predict(test_data)
+        import pandas as pd
+        df = pd.DataFrame(index=test_data.index)
+        df['predict_label'] = [i[0].split('__')[-1] for i in self._model.predict(test_data.tolist())[0]]
+        return df
 
-    def save_model(self, model_path):
+    def save_model(self, model_path='data_gen/model.bin'):
         """
 
         :param model_path: 'model_item.bin'
