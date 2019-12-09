@@ -9,26 +9,65 @@
 
 
 class DataProcessor:
-    def __init__(self, features, labels, cat_cols, split=0.25, random_state=14):
+    def __init__(self, features=None, labels=None, cat_cols=None, split=0.1, random_state=14):
         self._features = features
         self._labels = labels
         self._cat_cols = cat_cols
         from sklearn.model_selection import train_test_split
-        self._df_train, self._df_val, self._y_train, self._y_val = train_test_split(features, labels,
-                                                            test_size=split, random_state=random_state,
-                                                                stratify=labels)
+        self._features_train, self._features_val, self._labels_train, self._labels_val = train_test_split(features, labels,
+                                                                                                          test_size=split, random_state=random_state,
+                                                                                                          stratify=labels)
 
     def cv_input_fn(self):
         return self._features, self._labels, self._cat_cols
 
     def train_input_fn(self):
-        return self._df_train, self._y_train, self._cat_cols
+        return self._features_train, self._labels_train, self._cat_cols
 
     def eval_input_fn(self):
-        return self._df_val, self._y_val, self._cat_cols
+        return self._features_val, self._labels_val, self._cat_cols
 
     def test_input_fn(self, features, batch_size=None):
         pass
+
+
+class FastTextDataProcessor(DataProcessor):
+    def __init__(self, features=None, labels=None, split=0.1, random_state=14):
+        """
+        注意：这里的输入都是没有经过分词处理的短句
+        :param features: Series
+        :param labels: Series
+        :param cat_cols:
+        :param split:
+        :param random_state:
+        """
+        super().__init__(features=features, labels=labels, split=split, random_state=random_state)
+
+    def train_input_fn(self, dest_train_file_path='data_gen/trainset.txt'):
+        """
+
+        :param dest_train_file_path:
+        :return:
+        """
+        train_set = self._features_train.map(lambda x: ' '.join(list(x))) + ' __label__' + self._labels_train.map(
+            str) + '\n'
+        with open(dest_train_file_path, 'w', encoding='utf8') as f:
+            f.writelines(train_set.tolist())
+
+    def eval_input_fn(self, dest_val_file_path='data_gen/valset.txt'):
+        val_set = self._features_val.map(lambda x: ' '.join(list(x))) + ' __label__' + self._labels_val.map(
+            str) + '\n'
+        with open(dest_val_file_path, 'w', encoding='utf8') as f:
+            f.writelines(val_set.tolist())
+
+    def test_input_fn(self, features):
+        """
+
+        :param features: Series
+        :return:
+        """
+        return features.map(lambda x: ' '.join(list(x)))
+
 
 
 class Estimator(object):
@@ -111,7 +150,7 @@ class ClsEstimator(Estimator):
         self._model_path = model_path
 
     def model_fn(self):
-        return ""
+        raise NotImplementedError()
 
     def train(self,
               steps=None):
@@ -119,7 +158,7 @@ class ClsEstimator(Estimator):
         :param steps: Number of steps for which to train the model.
         :return:
         """
-        pass
+        raise NotImplementedError()
 
     def evaluate(self, steps=None):
         """
@@ -131,7 +170,7 @@ class ClsEstimator(Estimator):
         :param name:
         :return:
         """
-        pass
+        raise NotImplementedError()
 
     def train_eval(self):
         """
@@ -145,7 +184,7 @@ class ClsEstimator(Estimator):
 
         :return:
         """
-        pass
+        raise NotImplementedError()
 
     def test(self,
                 predict_keys=None,
@@ -160,11 +199,11 @@ class ClsEstimator(Estimator):
         :param yield_single_examples:
         :return:
         """
-        pass
+        raise NotImplementedError()
 
     def explain(self):
         """模型解释"""
-        pass
+        raise NotImplementedError()
 
 
 class CatBoostClsEstimator(ClsEstimator):
@@ -642,6 +681,86 @@ class XGBoostRegressorEstimator(Estimator):
 
         dfr['y_test'] = r
         return dfr
+
+
+class FastTextClsEstimator(ClsEstimator):
+    """
+    facebook fasttext==0.9.1
+    """
+    def __init__(self, params=None, data_processor=None, model_path=None):
+        """
+
+        :param params:
+        """
+        super().__init__(params=params, data_processor=data_processor, model_path=model_path)
+        if self._model_path:
+            self.load_model(self._model_path)
+        else:
+            self._model = None
+
+    def model_fn(self):
+        import fasttext
+        return fasttext
+
+    def train(self, train_file_path):
+        """
+
+        :param train_file_path:
+        :return:
+        """
+        self._model = self.model_fn.train_supervised(train_file_path)
+        return self._model
+
+    def _print_results(self, N, p, r):
+        print("N\t" + str(N))
+        print("P@{}\t{:.3f}".format(1, p))
+        print("R@{}\t{:.3f}".format(1, r))
+
+    def evaluate(self, path, val_file_path, mode='simple', k=1):
+        """
+        To evaluate our model by computing the precision at 1 (P@1) and the recall on a test set, we use the test function
+        :param path:
+        :param val_file_path:
+        :param mode:
+            simple: 返回整体的精确率和召回率
+            detail: 返回每个label的精确率和召回率和F1
+        :param k:
+            By default, predict returns only one label : the one with the highest probability.
+            You can also predict more than one label by specifying the parameter k
+        :return:
+            N, p, r = 测试样本数，精确率，召回率
+        """
+        N, p, r = self._model.test(val_file_path, k)
+        self._print_results(N, p, r)
+        if mode == 'detail':
+            r_dict = self._model.test_label(val_file_path, k)
+            print(r_dict)
+            return r_dict
+        return N, p, r
+
+    def test(self, test_data: list, k=1):
+        """
+        Given a string, get a list of labels and a list of
+        corresponding probabilities. k controls the number
+        of returned labels. A choice of 5, will return the 5
+        most probable labels. By default this returns only
+        the most likely label and probability.
+        :param test_data:
+        :param k:
+        :return:
+        """
+        return self._model.predict(test_data)
+
+    def save_model(self, model_path):
+        """
+
+        :param model_path: 'model_item.bin'
+        :return:
+        """
+        self._model.save_model(model_path)
+
+    def load_model(self, model_path):
+        self._model = self.model_fn().load_model(model_path)
 
 
 if __name__ == '__main__':
