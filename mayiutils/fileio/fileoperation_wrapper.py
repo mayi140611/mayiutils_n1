@@ -42,15 +42,16 @@ class FileOperationWrapper:
         return f.read()
 
     @classmethod
-    def readZipFile(cls, filepath):
+    def readZipFile(cls, filepath, index):
         """
 
         :param filepath:
+        :param index: 文件在f.namelist()的索引
         :return:
         """
         with zipfile.ZipFile(filepath) as f:
             # f.namelist() 返回所有文件夹和文件
-            data = f.read(f.namelist()[2]).decode('utf8')
+            data = f.read(f.namelist()[index]).decode('utf8')
         return data
 
     @classmethod
