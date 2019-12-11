@@ -7,7 +7,7 @@
 @time: 2019-12-05 17:36
 """
 import pandas as pd
-
+import numpy as np
 
 class CatFeatureEncoder:
     """类别特征编码"""
@@ -55,3 +55,40 @@ class CatFeatureEncoder:
         le = LabelEncoder()
         le.fit(s)
         return le.transform(s), le
+
+    @classmethod
+    def target_encode(cls, features, cat_cols, labels, drop=True, base=True, alpha=0.1, prior=0.05, r=2):
+        df = features.copy()
+
+        def te_func(count, total_count, base=base, alpha=alpha, prior=prior, r=r):
+            """
+
+            :param count:
+            :param total_count:
+            :param base: 基础算法，只算概率，不考虑惩罚项
+            :param prior: 先验参数，防止被编码为0(编码0可以留给从未出现的特征类别!!!)
+            :param r: 保留小数位数
+            :return:
+            """
+            if base:
+                return round(count / total_count, r)
+            if total_count > 100:
+                penalty = 1  # 不惩罚
+            else:
+                penalty = 1/(1+np.exp(-total_count*alpha))
+            return round((count+prior)/(total_count+1)*penalty, r)
+        for c in cat_cols:
+            for feature_cls, total_count in df[c].value_counts().items():
+                count = 0
+                df1 = df.loc[df[c]==feature_cls]
+                for i, count_i in labels[labels.index.isin(df1.index)].value_counts().items():
+                    # if count == 0:  # 放弃对第一列编码
+                    #     count += 1
+                    #     continue
+                    te_val = te_func(count_i, total_count)
+                    df.loc[(df[c]==feature_cls), f'{c}_{i}']=te_val
+            if drop:
+                del df[c]
+        return df.fillna(0)
+
+

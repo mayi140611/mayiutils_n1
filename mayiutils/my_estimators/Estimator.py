@@ -421,11 +421,12 @@ class XGBoostClsEstimator(ClsEstimator):
 
         :param params:
             params = {
-                'iterations': iterations,
-                # learning_rate: 0.1,
-                #     'custom_metric': 'AUC',
-                'custom_metric': custom_metric,
-                'loss_function': 'CrossEntropy'
+                max_depth: 3,
+                learning_rate: 0.1,
+                n_estimators: 1000,
+                objective: 'binary:logistic',
+                booster: 'gbtree',
+                n_jobs: 1,
             }
         """
         super().__init__(params=params, data_processor=data_processor, model_path=model_path)
@@ -435,8 +436,8 @@ class XGBoostClsEstimator(ClsEstimator):
             self._model = self.model_fn()
 
     def model_fn(self):
-        from catboost import CatBoostClassifier
-        return CatBoostClassifier(**self._params) if self._params else CatBoostClassifier()
+        from xgboost import XGBClassifier
+        return XGBClassifier(**self._params) if self._params else XGBClassifier()
 
     def train(self, plot=True, verbose=True, show_features_importance=True, init_model=None):
         """
