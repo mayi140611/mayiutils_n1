@@ -237,7 +237,7 @@ class NLPDataPrepareWrapper:
         return dfr
 
     @classmethod
-    def match_hospital(cls, df_base, base_code_col, base_name_col, df_target, target_code_col, target_name_col, target_file, order='keep'):
+    def match_illness(cls, df_base, base_code_col, base_name_col, df_target, target_code_col, target_name_col, target_file, order='keep'):
         """
         疾病匹配，先通过code匹配，匹配上的sim=3，然后在通过名称匹配
         :param df_base:

@@ -8,8 +8,39 @@
 """
 
 
+def data_split(df, mode='train_val', shuffle=False, stratify=None, random_state=14):
+    """
+
+    :param df:
+    :param mode:
+    :param shuffle:
+    :param stratify:
+    :param random_state:
+    :return:
+    """
+    from sklearn.model_selection import train_test_split
+    if df.shape[0] > 100000:
+        test_size = 0.05
+    elif df.shape[0] > 50000:
+        test_size = 0.075
+    elif df.shape[0] > 10000:
+        test_size = 0.1
+    else:
+        test_size = 0.25
+    print(f'sample sum: {df.shape[0]}, test_size: {test_size}')
+    if stratify is not None:
+        df_train, df_test, stratify, _ = train_test_split(df, stratify, test_size=test_size, shuffle=shuffle, stratify=stratify, random_state=random_state)
+    else:
+        df_train, df_test = train_test_split(df, test_size=test_size, shuffle=shuffle, stratify=stratify, random_state=random_state)
+    if mode == 'train_val':
+        return df_train, df_test
+    elif mode == 'train_val_test':
+        df_train, df_val = train_test_split(df_train, test_size=test_size, shuffle=shuffle, stratify=stratify, random_state=random_state)
+        return df_train, df_val, df_test
+
+
 class DataProcessor:
-    def __init__(self, features=None, labels=None, cat_cols=None, split=0.1, random_state=14):
+    def __init__(self, features=None, labels=None, cat_cols=None, split=None, random_state=14):
         self._features = features
         self._labels = labels
         self._cat_cols = cat_cols
