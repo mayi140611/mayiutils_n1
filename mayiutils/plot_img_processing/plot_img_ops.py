@@ -13,7 +13,7 @@ plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']
 plt.rcParams['axes.unicode_minus'] = False
 
 
-def plot2D(func, xRange):
+def plot2D(func, xRange, xlabel='x', ylabel='f(x)'):
     """
     绘制2D函数图像
     e.g.
@@ -23,5 +23,8 @@ def plot2D(func, xRange):
     :return:
     """
     xArr = np.linspace(xRange[0], xRange[1], num=1000)
+    plt.grid(True)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     plt.plot(xArr, func(xArr))
     plt.show()
