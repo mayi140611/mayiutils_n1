@@ -237,7 +237,7 @@ class NLPDataPrepareWrapper:
         return dfr
 
     @classmethod
-    def match_illness(cls, df_base, base_code_col, base_name_col, df_target, target_code_col, target_name_col, target_file, order='keep'):
+    def match_illness(cls, df_base, base_code_col, base_name_col, df_target, target_code_col, target_name_col, target_file=None, order='keep'):
         """
         疾病匹配，先通过code匹配，匹配上的sim=3，然后在通过名称匹配
         :param df_base:
@@ -291,7 +291,8 @@ class NLPDataPrepareWrapper:
         else:
             dfr = pd.concat([df_exact, df_o1], ignore_index=True).sort_values('_id')
         dfr = dfr[df_exact.columns]
-        dfr.to_excel(f"data_gen/{target_file.split('/')[-1].split('.')[0]}_疾病匹配结果.xlsx", index=False)
+        if target_file:
+            dfr.to_excel(f"data_gen/{target_file.split('/')[-1].split('.')[0]}_疾病匹配结果.xlsx", index=False)
         return dfr
 
 
