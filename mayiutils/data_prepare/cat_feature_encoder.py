@@ -9,6 +9,7 @@
 import pandas as pd
 import numpy as np
 
+
 class CatFeatureEncoder:
     """类别特征编码"""
 
@@ -57,7 +58,20 @@ class CatFeatureEncoder:
         return le.transform(s), le
 
     @classmethod
-    def target_encode(cls, features, cat_cols, labels, drop=True, base=True, alpha=0.1, prior=0.05, r=2):
+    def target_encode(cls, features, cat_cols, target_col, drop=True, base=True, alpha=0.1, prior=0.05, r=2):
+        """
+        分类任务才能使用target_encode。
+        回归任务需要先对label分组成bucket，才能使用target_encode，参考Catboost
+        :param features:
+        :param cat_cols:
+        :param target_col:
+        :param drop:
+        :param base:
+        :param alpha:
+        :param prior:
+        :param r:
+        :return:
+        """
         df = features.copy()
 
         def te_func(count, total_count, base=base, alpha=alpha, prior=prior, r=r):
@@ -81,7 +95,7 @@ class CatFeatureEncoder:
             for feature_cls, total_count in df[c].value_counts().items():
                 count = 0
                 df1 = df.loc[df[c]==feature_cls]
-                for i, count_i in labels[labels.index.isin(df1.index)].value_counts().items():
+                for i, count_i in df1[target_col].value_counts().items():
                     # if count == 0:  # 放弃对第一列编码
                     #     count += 1
                     #     continue
