@@ -14,18 +14,29 @@ class CatFeatureEncoder:
     """类别特征编码"""
 
     @classmethod
-    def build_one_hot_features(cls, df, cols: list):
+    def build_one_hot_features(cls, df, cols: list, mode='cols'):
         """
         构建one-hot特征
         可以处理None值：会被处理为全0
         :param df:
         :param cols: list
+        :param mode:
+            cols 一个one-hot占一列
+            list 只返回一列，值为one-hot编码后的list
         :return:
         """
+        df = df.copy()
         for col in cols:
             t = pd.get_dummies(df[col], prefix=col)
-            df = pd.concat([df, t], axis=1)
-            del df[col]
+            if mode == 'cols':
+                df = pd.concat([df, t], axis=1)
+                del df[col]
+            elif mode == 'list':
+                dft = pd.Series()
+                for i in df.index:
+                    dft.loc[i] = t.loc[i].tolist()
+                df[col] = dft
+
         return df
 
     @classmethod
