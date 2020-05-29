@@ -11,21 +11,7 @@ import pandas as pd
 
 
 class DataExplore:
-    @classmethod
-    def time_cost(cls, func):
-        """
-        记录函数运行时间
-        """
-        import time
 
-        def wrapper(*args, **kvargs):
-            tic = time.time()
-            result = func(*args, **kvargs)
-            toc = time.time()
-            print('{} is called. {}s is used.'.format(func.__name__, toc - tic))
-            return result
-
-        return wrapper
 
     @classmethod
     def normalize(cls, X, norm='01', axis=0, paramdict=dict()):
